@@ -15,6 +15,7 @@ from services.services_utils import AudioOrNone, TilingConfigType, device_suppor
 
 # Default guider params from LTX-2.3 non-distilled pipeline constants.
 _DEFAULT_NUM_INFERENCE_STEPS = 30
+_DEFAULT_CFG_SCALE = 3.0
 _DEFAULT_NEGATIVE_PROMPT = (
     "blurry, out of focus, overexposed, underexposed, low contrast, washed out colors, "
     "excessive noise, grainy texture, poor lighting, flickering, motion blur, distorted "
@@ -53,6 +54,7 @@ class LTXProVideoPipeline:
         from ltx_pipelines.ti2vid_two_stages import TI2VidTwoStagesPipeline
 
         self.num_inference_steps = _DEFAULT_NUM_INFERENCE_STEPS
+        self.cfg_scale = _DEFAULT_CFG_SCALE
         self.negative_prompt = _DEFAULT_NEGATIVE_PROMPT
 
         self.pipeline = TI2VidTwoStagesPipeline(
@@ -94,7 +96,17 @@ class LTXProVideoPipeline:
         images: list[ImageConditioningInput],
         tiling_config: TilingConfigType,
     ) -> tuple[torch.Tensor | Iterator[torch.Tensor], AudioOrNone]:
+        from ltx_core.components.guiders import MultiModalGuiderParams
         from ltx_pipelines.utils.args import ImageConditioningInput as _LtxImageInput
+
+        video_guider_params = MultiModalGuiderParams(
+            cfg_scale=self.cfg_scale,
+            stg_scale=self._video_guider_params.stg_scale,
+            rescale_scale=self._video_guider_params.rescale_scale,
+            modality_scale=self._video_guider_params.modality_scale,
+            skip_step=self._video_guider_params.skip_step,
+            stg_blocks=self._video_guider_params.stg_blocks,
+        )
 
         return self.pipeline(
             prompt=prompt,
@@ -105,7 +117,7 @@ class LTXProVideoPipeline:
             num_frames=num_frames,
             frame_rate=frame_rate,
             num_inference_steps=self.num_inference_steps,
-            video_guider_params=self._video_guider_params,
+            video_guider_params=video_guider_params,
             audio_guider_params=self._audio_guider_params,
             images=[_LtxImageInput(img.path, img.frame_idx, img.strength) for img in images],
             tiling_config=tiling_config,

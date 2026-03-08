@@ -22,7 +22,7 @@ class TestGetSettings:
         assert data["hasFalApiKey"] is False
         assert data["useLocalTextEncoder"] is False
         assert data["fastModel"] == {"useUpscaler": True}
-        assert data["proModel"] == {"steps": 20, "useUpscaler": True}
+        assert data["proModel"] == {"steps": 20, "cfg": 3.5, "useUpscaler": True}
         assert data["promptCacheSize"] == 100
         assert data["promptEnhancerEnabledT2V"] is True
         assert data["promptEnhancerEnabledI2V"] is False
@@ -64,9 +64,10 @@ class TestPostSettings:
         assert test_state.state.app_settings.fast_model.use_upscaler is False
 
     def test_update_pro_model(self, client, test_state):
-        r = client.post("/api/settings", json={"proModel": {"steps": 30, "useUpscaler": False}})
+        r = client.post("/api/settings", json={"proModel": {"steps": 30, "cfg": 4.2, "useUpscaler": False}})
         assert r.status_code == 200
         assert test_state.state.app_settings.pro_model.steps == 30
+        assert test_state.state.app_settings.pro_model.cfg == 4.2
         assert test_state.state.app_settings.pro_model.use_upscaler is False
 
     def test_deep_partial_patch_preserves_nested_fields(self, client, test_state):
@@ -74,6 +75,7 @@ class TestPostSettings:
         r = client.post("/api/settings", json={"proModel": {"steps": 30}})
         assert r.status_code == 200
         assert test_state.state.app_settings.pro_model.steps == 30
+        assert test_state.state.app_settings.pro_model.cfg == 3.5
         assert test_state.state.app_settings.pro_model.use_upscaler is True
 
     def test_prompt_cache_size_clamped_max(self, client, test_state):
@@ -168,7 +170,7 @@ class TestSettingsPersistence:
                 {
                     "prompt_cache_size": 5000,
                     "locked_seed": -55,
-                    "pro_model": {"steps": 999},
+                    "pro_model": {"steps": 999, "cfg": 9.9},
                 }
             ),
             encoding="utf-8",
@@ -177,7 +179,8 @@ class TestSettingsPersistence:
         loaded = self._new_state(test_state, default_app_settings)
         assert loaded.state.app_settings.prompt_cache_size == 1000
         assert loaded.state.app_settings.locked_seed == 0
-        assert loaded.state.app_settings.pro_model.steps == 100
+        assert loaded.state.app_settings.pro_model.steps == 50
+        assert loaded.state.app_settings.pro_model.cfg == 5.0
 
     def test_legacy_prompt_enhancer_key_migrates(self, test_state, default_app_settings):
         test_state.config.settings_file.write_text(

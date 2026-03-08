@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from state.app_state_types import GpuSlot, VideoPipelineState, VideoPipelineWarmth
-from tests.fakes.services import FakeFastVideoPipeline
+from tests.fakes.services import FakeFastVideoPipeline, FakeProVideoPipeline
 
 
 @dataclass
@@ -78,6 +78,26 @@ class TestGenerate:
 
         pipeline = fake_services.fast_video_pipeline
         assert len(pipeline.generate_calls) == 1
+
+    def test_pro_model_uses_configured_steps_and_cfg(self, client, test_state, fake_services, create_fake_model_files):
+        create_fake_model_files(include_pro=True)
+        _enable_local_text_encoding(test_state)
+        test_state.state.app_settings.pro_model.steps = 42
+        test_state.state.app_settings.pro_model.cfg = 4.4
+
+        r = client.post(
+            "/api/generate",
+            json={**_T2V_JSON, "model": "pro"},
+        )
+
+        assert r.status_code == 200
+        assert r.json()["status"] == "complete"
+
+        pipeline = fake_services.pro_video_pipeline
+        assert len(pipeline.generate_calls) == 1
+        assert isinstance(pipeline, FakeProVideoPipeline)
+        assert pipeline.num_inference_steps == 42
+        assert pipeline.cfg_scale == 4.4
 
     def test_already_running(self, client, test_state):
         _fake_running_generation_state(test_state)

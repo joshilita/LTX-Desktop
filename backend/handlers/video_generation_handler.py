@@ -200,6 +200,7 @@ class VideoGenerationHandler(StateHandlerBase):
         # Configure Pro pipeline inference steps from user settings.
         if model_type == "pro":
             pipeline_state.pipeline.num_inference_steps = settings.pro_model.steps  # type: ignore[attr-defined]
+            pipeline_state.pipeline.cfg_scale = settings.pro_model.cfg  # type: ignore[attr-defined]
 
         t_load_end = time.perf_counter()
         logger.info("[%s] Pipeline load: %.2fs", gen_mode, t_load_end - t_load_start)

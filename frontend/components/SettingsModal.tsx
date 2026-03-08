@@ -183,10 +183,18 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
   }
 
   const handleProStepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const steps = Math.max(1, Math.min(100, parseInt(e.target.value) || 20))
+    const steps = Math.max(20, Math.min(50, parseInt(e.target.value) || 20))
     onSettingsChange({
       ...settings,
       proModel: { ...settings.proModel, steps },
+    })
+  }
+
+  const handleProCfgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cfg = Math.max(2, Math.min(5, parseFloat(e.target.value) || 3.5))
+    onSettingsChange({
+      ...settings,
+      proModel: { ...settings.proModel, cfg },
     })
   }
 
@@ -968,16 +976,37 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm text-white">Inference Steps</label>
-                      <p className="text-xs text-zinc-500">More steps = better quality, slower</p>
+                      <p className="text-xs text-zinc-500">Full model range: 20-50 steps</p>
                     </div>
                     <input
                       type="number"
-                      min="1"
-                      max="100"
+                      min="20"
+                      max="50"
                       value={settings.proModel?.steps ?? 20}
                       onChange={handleProStepsChange}
                       className="w-20 px-3 py-1.5 bg-zinc-700 border border-zinc-600 rounded-lg text-sm text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm text-white">CFG Scale</label>
+                        <p className="text-xs text-zinc-500">Range: 2.0-5.0 (recommended 3.0-4.0)</p>
+                      </div>
+                      <input
+                        type="number"
+                        min="2"
+                        max="5"
+                        step="0.1"
+                        value={settings.proModel?.cfg ?? 3.5}
+                        onChange={handleProCfgChange}
+                        className="w-20 px-3 py-1.5 bg-zinc-700 border border-zinc-600 rounded-lg text-sm text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <p className="text-xs text-zinc-500">
+                      Lower values (2.0-3.0): more creative. Higher values (4.0-5.0): stronger prompt adherence.
+                    </p>
                   </div>
 
                   {/* Upscaler Toggle */}
@@ -1003,7 +1032,8 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
 
                 {/* Summary */}
                 <div className="text-xs text-zinc-500">
-                  Current: {settings.proModel?.steps ?? 20} steps, {settings.proModel?.useUpscaler !== false ? 'with upscaler (2-stage, recommended)' : 'native resolution'}
+                  Current: {settings.proModel?.steps ?? 20} steps, CFG {settings.proModel?.cfg ?? 3.5},{' '}
+                  {settings.proModel?.useUpscaler !== false ? 'with upscaler (2-stage, recommended)' : 'native resolution'}
                 </div>
               </div>
 

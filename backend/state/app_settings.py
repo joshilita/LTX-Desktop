@@ -51,12 +51,22 @@ class FastModelSettings(SettingsBaseModel):
 
 class ProModelSettings(SettingsBaseModel):
     steps: int = 20
+    cfg: float = 3.5
     use_upscaler: bool = True
 
     @field_validator("steps", mode="before")
     @classmethod
     def _clamp_steps(cls, value: Any) -> int:
-        return _clamp_int(value, minimum=1, maximum=100, default=20)
+        return _clamp_int(value, minimum=20, maximum=50, default=20)
+
+    @field_validator("cfg", mode="before")
+    @classmethod
+    def _clamp_cfg(cls, value: Any) -> float:
+        if value is None:
+            return 3.5
+
+        parsed = float(value)
+        return max(2.0, min(5.0, parsed))
 
 
 class AppSettings(SettingsBaseModel):
