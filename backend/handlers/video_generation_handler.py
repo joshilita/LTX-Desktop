@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from PIL import Image
 
@@ -97,9 +97,8 @@ class VideoGenerationHandler(StateHandlerBase):
         if audio_path:
             return self._generate_a2v(req, duration, fps, audio_path=audio_path)
 
-        model_type = req.model.strip().lower() if req.model else "fast"
-        if model_type not in ("fast", "pro"):
-            model_type = "fast"
+        _raw_model = req.model.strip().lower() if req.model else "fast"
+        model_type: Literal["fast", "pro"] = "pro" if _raw_model == "pro" else "fast"
 
         logger.info("Resolution %s - using %s pipeline", resolution, model_type)
 
@@ -198,8 +197,9 @@ class VideoGenerationHandler(StateHandlerBase):
         t_load_start = time.perf_counter()
         pipeline_state = self._pipelines.load_gpu_pipeline("pro" if model_type == "pro" else "fast", should_warm=False)
 
-        if model_type == "pro" and hasattr(pipeline_state.pipeline, "num_inference_steps"):
-            pipeline_state.pipeline.num_inference_steps = settings.pro_model.steps  # type: ignore[union-attr]
+        # Configure Pro pipeline inference steps from user settings.
+        if model_type == "pro":
+            pipeline_state.pipeline.num_inference_steps = settings.pro_model.steps  # type: ignore[attr-defined]
 
         t_load_end = time.perf_counter()
         logger.info("[%s] Pipeline load: %.2fs", gen_mode, t_load_end - t_load_start)
