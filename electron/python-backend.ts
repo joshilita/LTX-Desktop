@@ -226,6 +226,9 @@ export async function startPythonBackend(): Promise<void> {
         LTX_LOG_FILE: getCurrentLogFilename(),
         LTX_APP_DATA_DIR: getAppDataDir(),
         PYTORCH_ENABLE_MPS_FALLBACK: '1',
+        // Pass through network sharing env vars if set
+        ...(process.env.LTX_HOST ? { LTX_HOST: process.env.LTX_HOST } : {}),
+        ...(process.env.LTX_ALLOWED_ORIGINS ? { LTX_ALLOWED_ORIGINS: process.env.LTX_ALLOWED_ORIGINS } : {}),
         // Set PYTHONHOME for bundled Python on macOS so it finds its stdlib
         ...(!isDev && process.platform !== 'win32' ? {
           PYTHONHOME: getPythonDir(),

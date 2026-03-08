@@ -59,6 +59,7 @@ class AppHandler:
         ltx_api_client: LTXAPIClient,
         zit_api_client: ZitAPIClient,
         fast_video_pipeline_class: type[FastVideoPipeline],
+        pro_video_pipeline_class: type[FastVideoPipeline],
         image_generation_pipeline_class: type[ImageGenerationPipeline],
         ic_lora_pipeline_class: type[IcLoraPipeline],
         a2v_pipeline_class: type[A2VPipeline],
@@ -77,6 +78,7 @@ class AppHandler:
         self.ltx_api_client = ltx_api_client
         self.zit_api_client = zit_api_client
         self.fast_video_pipeline_class = fast_video_pipeline_class
+        self.pro_video_pipeline_class = pro_video_pipeline_class
         self.image_generation_pipeline_class = image_generation_pipeline_class
         self.ic_lora_pipeline_class = ic_lora_pipeline_class
         self.a2v_pipeline_class = a2v_pipeline_class
@@ -88,6 +90,7 @@ class AppHandler:
         self.state = AppState(
             available_files={
                 "checkpoint": None,
+                "pro_checkpoint": None,
                 "upsampler": None,
                 "text_encoder": None,
                 "zit": None,
@@ -139,6 +142,7 @@ class AppHandler:
             text_handler=self.text,
             gpu_cleaner=gpu_cleaner,
             fast_video_pipeline_class=fast_video_pipeline_class,
+            pro_video_pipeline_class=pro_video_pipeline_class,
             image_generation_pipeline_class=image_generation_pipeline_class,
             ic_lora_pipeline_class=ic_lora_pipeline_class,
             a2v_pipeline_class=a2v_pipeline_class,
@@ -230,6 +234,7 @@ class ServiceBundle:
     ltx_api_client: LTXAPIClient
     zit_api_client: ZitAPIClient
     fast_video_pipeline_class: type[FastVideoPipeline]
+    pro_video_pipeline_class: type[FastVideoPipeline]
     image_generation_pipeline_class: type[ImageGenerationPipeline]
     ic_lora_pipeline_class: type[IcLoraPipeline]
     a2v_pipeline_class: type[A2VPipeline]
@@ -240,6 +245,7 @@ class ServiceBundle:
 def build_default_service_bundle(config: RuntimeConfig) -> ServiceBundle:
     """Build real runtime services with lazy heavy imports isolated from tests."""
     from services.fast_video_pipeline.ltx_fast_video_pipeline import LTXFastVideoPipeline
+    from services.pro_video_pipeline.ltx_pro_video_pipeline import LTXProVideoPipeline
     from services.zit_api_client.zit_api_client_impl import ZitAPIClientImpl
     from services.gpu_cleaner.torch_cleaner import TorchCleaner
     from services.gpu_info.gpu_info_impl import GpuInfoImpl
@@ -272,6 +278,7 @@ def build_default_service_bundle(config: RuntimeConfig) -> ServiceBundle:
         ltx_api_client=LTXAPIClientImpl(http=http, ltx_api_base_url=config.ltx_api_base_url),
         zit_api_client=ZitAPIClientImpl(http=http),
         fast_video_pipeline_class=LTXFastVideoPipeline,
+        pro_video_pipeline_class=LTXProVideoPipeline,
         image_generation_pipeline_class=ZitImageGenerationPipeline,
         ic_lora_pipeline_class=LTXIcLoraPipeline,
         a2v_pipeline_class=LTXa2vPipeline,
@@ -300,6 +307,7 @@ def build_initial_state(
         ltx_api_client=bundle.ltx_api_client,
         zit_api_client=bundle.zit_api_client,
         fast_video_pipeline_class=bundle.fast_video_pipeline_class,
+        pro_video_pipeline_class=bundle.pro_video_pipeline_class,
         image_generation_pipeline_class=bundle.image_generation_pipeline_class,
         ic_lora_pipeline_class=bundle.ic_lora_pipeline_class,
         a2v_pipeline_class=bundle.a2v_pipeline_class,

@@ -25,7 +25,7 @@ from services.task_runner.task_runner import TaskRunner
 from services.text_encoder.text_encoder import TextEncoder
 from services.video_processor.video_processor import VideoInfoPayload, VideoProcessor
 
-VideoPipelineModelType = Literal["fast"]
+VideoPipelineModelType = Literal["fast", "pro"]
 
 __all__ = [
     "A2VPipeline",

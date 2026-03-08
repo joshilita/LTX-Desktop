@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class FastVideoPipeline(Protocol):
-    pipeline_kind: ClassVar[Literal["fast"]]
+    pipeline_kind: ClassVar[Literal["fast", "pro"]]
 
     @staticmethod
     def create(

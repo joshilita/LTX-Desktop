@@ -241,7 +241,13 @@ runtime_config = RuntimeConfig(
 )
 
 handler = build_initial_state(runtime_config, DEFAULT_APP_SETTINGS)
-app = create_app(handler=handler, allowed_origins=DEFAULT_ALLOWED_ORIGINS)
+
+# Allow additional CORS origins via LTX_ALLOWED_ORIGINS env var (comma-separated).
+_extra_origins_raw = os.environ.get("LTX_ALLOWED_ORIGINS", "")
+_extra_origins = [o.strip() for o in _extra_origins_raw.split(",") if o.strip()] if _extra_origins_raw else []
+_all_origins = DEFAULT_ALLOWED_ORIGINS + _extra_origins
+
+app = create_app(handler=handler, allowed_origins=_all_origins)
 
 
 def precache_model_files(model_dir: Path) -> int:
@@ -282,13 +288,16 @@ if __name__ == "__main__":
     import uvicorn
 
     port = int(os.environ.get("LTX_PORT", PORT))
+    host = os.environ.get("LTX_HOST", "127.0.0.1")
     logger.info("=" * 60)
     logger.info("LTX-2 Video Generation Server (FastAPI + Uvicorn)")
     logger.info(f"Log file: {log_file}")
     log_hardware_info()
+    if host != "127.0.0.1":
+        logger.info(f"Network sharing enabled — listening on {host}:{port}")
     logger.info("=" * 60)
 
     warmup_thread = threading.Thread(target=background_warmup, daemon=True)
     warmup_thread.start()
 
-    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info", access_log=False)
+    uvicorn.run(app, host=host, port=port, log_level="info", access_log=False)
