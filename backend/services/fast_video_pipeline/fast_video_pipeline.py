@@ -1,4 +1,4 @@
-"""Fast video pipeline protocol definitions."""
+"""Video pipeline protocol definitions (shared by Fast and Pro pipelines)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,14 @@ if TYPE_CHECKING:
 
 
 class FastVideoPipeline(Protocol):
-    pipeline_kind: ClassVar[Literal["fast"]]
+    """Common protocol for video generation pipelines (fast and pro).
+
+    Both LTXFastVideoPipeline and LTXProVideoPipeline implement this protocol.
+    The pipeline_kind ClassVar uses a union Literal to satisfy pyright strict
+    mode invariance requirements for ClassVar matching.
+    """
+
+    pipeline_kind: ClassVar[Literal["fast", "pro"]]
 
     @staticmethod
     def create(

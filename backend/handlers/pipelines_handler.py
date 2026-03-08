@@ -47,6 +47,7 @@ class PipelinesHandler(StateHandlerBase):
         text_handler: TextHandler,
         gpu_cleaner: GpuCleaner,
         fast_video_pipeline_class: type[FastVideoPipeline],
+        pro_video_pipeline_class: type[FastVideoPipeline],
         image_generation_pipeline_class: type[ImageGenerationPipeline],
         ic_lora_pipeline_class: type[IcLoraPipeline],
         a2v_pipeline_class: type[A2VPipeline],
@@ -59,6 +60,7 @@ class PipelinesHandler(StateHandlerBase):
         self._text_handler = text_handler
         self._gpu_cleaner = gpu_cleaner
         self._fast_video_pipeline_class = fast_video_pipeline_class
+        self._pro_video_pipeline_class = pro_video_pipeline_class
         self._image_generation_pipeline_class = image_generation_pipeline_class
         self._ic_lora_pipeline_class = ic_lora_pipeline_class
         self._a2v_pipeline_class = a2v_pipeline_class
@@ -120,15 +122,24 @@ class PipelinesHandler(StateHandlerBase):
     def _create_video_pipeline(self, model_type: VideoPipelineModelType) -> VideoPipelineState:
         gemma_root = self._text_handler.resolve_gemma_root()
 
-        checkpoint_path = str(self._config.model_path("checkpoint"))
         upsampler_path = str(self._config.model_path("upsampler"))
 
-        pipeline = self._fast_video_pipeline_class.create(
-            checkpoint_path,
-            gemma_root,
-            upsampler_path,
-            self._device,
-        )
+        if model_type == "pro":
+            checkpoint_path = str(self._config.model_path("pro_checkpoint"))
+            pipeline = self._pro_video_pipeline_class.create(
+                checkpoint_path,
+                gemma_root,
+                upsampler_path,
+                self._device,
+            )
+        else:
+            checkpoint_path = str(self._config.model_path("checkpoint"))
+            pipeline = self._fast_video_pipeline_class.create(
+                checkpoint_path,
+                gemma_root,
+                upsampler_path,
+                self._device,
+            )
 
         state = VideoPipelineState(
             pipeline=pipeline,

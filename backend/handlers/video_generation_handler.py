@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from PIL import Image
 
@@ -97,7 +97,10 @@ class VideoGenerationHandler(StateHandlerBase):
         if audio_path:
             return self._generate_a2v(req, duration, fps, audio_path=audio_path)
 
-        logger.info("Resolution %s - using fast pipeline", resolution)
+        _raw_model = req.model.strip().lower() if req.model else "fast"
+        model_type: Literal["fast", "pro"] = "pro" if _raw_model == "pro" else "fast"
+
+        logger.info("Resolution %s - using %s pipeline", resolution, model_type)
 
         RESOLUTION_MAP_16_9: dict[str, tuple[int, int]] = {
             "540p": (960, 544),
@@ -130,7 +133,7 @@ class VideoGenerationHandler(StateHandlerBase):
         seed = self._resolve_seed()
 
         try:
-            self._pipelines.load_gpu_pipeline("fast", should_warm=False)
+            self._pipelines.load_gpu_pipeline(model_type, should_warm=False)
             self._generation.start_generation(generation_id)
 
             output_path = self.generate_video(
@@ -143,6 +146,7 @@ class VideoGenerationHandler(StateHandlerBase):
                 seed=seed,
                 camera_motion=req.cameraMotion,
                 negative_prompt=req.negativePrompt,
+                model_type=model_type,
             )
 
             self._generation.complete_generation(output_path)
@@ -167,22 +171,36 @@ class VideoGenerationHandler(StateHandlerBase):
         seed: int,
         camera_motion: VideoCameraMotion,
         negative_prompt: str,
+        model_type: str = "fast",
     ) -> str:
         t_total_start = time.perf_counter()
         gen_mode = "i2v" if image is not None else "t2v"
-        logger.info("[%s] Generation started (model=fast, %dx%d, %d frames, %d fps)", gen_mode, width, height, num_frames, int(fps))
+        logger.info("[%s] Generation started (model=%s, %dx%d, %d frames, %d fps)", gen_mode, model_type, width, height, num_frames, int(fps))
 
         if self._generation.is_generation_cancelled():
             raise RuntimeError("Generation was cancelled")
 
-        if not self._config.model_path("checkpoint").exists():
-            raise RuntimeError("Models not downloaded. Please download the AI models first using the Model Status menu.")
+        if model_type == "pro":
+            if not self._config.model_path("pro_checkpoint").exists():
+                raise RuntimeError("Pro model not downloaded. Please download the Pro AI model first using the Model Status menu.")
+        else:
+            if not self._config.model_path("checkpoint").exists():
+                raise RuntimeError("Models not downloaded. Please download the AI models first using the Model Status menu.")
 
-        total_steps = 8
+        settings = self.state.app_settings
+        if model_type == "pro":
+            total_steps = settings.pro_model.steps
+        else:
+            total_steps = 8
 
         self._generation.update_progress("loading_model", 5, 0, total_steps)
         t_load_start = time.perf_counter()
-        pipeline_state = self._pipelines.load_gpu_pipeline("fast", should_warm=False)
+        pipeline_state = self._pipelines.load_gpu_pipeline("pro" if model_type == "pro" else "fast", should_warm=False)
+
+        # Configure Pro pipeline inference steps from user settings.
+        if model_type == "pro":
+            pipeline_state.pipeline.num_inference_steps = settings.pro_model.steps  # type: ignore[attr-defined]
+
         t_load_end = time.perf_counter()
         logger.info("[%s] Pipeline load: %.2fs", gen_mode, t_load_end - t_load_start)
 

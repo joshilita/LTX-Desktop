@@ -116,6 +116,7 @@ export function SettingsPanel({
           disabled={disabled}
         >
           <option value="fast">LTX 2.3 Fast</option>
+          <option value="pro">LTX 2.3 Pro</option>
         </Select>
       ) : (
         <Select

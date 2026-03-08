@@ -1,9 +1,9 @@
-"""LTX fast video pipeline wrapper."""
+"""LTX Pro (non-distilled) video pipeline wrapper."""
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 import os
+from collections.abc import Iterator
 from typing import ClassVar, Literal, cast
 
 import torch
@@ -13,8 +13,19 @@ from services.ltx_pipeline_common import default_tiling_config, encode_video_out
 from services.services_utils import AudioOrNone, TilingConfigType, device_supports_fp8
 
 
-class LTXFastVideoPipeline:
-    pipeline_kind: ClassVar[Literal["fast", "pro"]] = "fast"
+# Default guider params from LTX-2.3 non-distilled pipeline constants.
+_DEFAULT_NUM_INFERENCE_STEPS = 30
+_DEFAULT_NEGATIVE_PROMPT = (
+    "blurry, out of focus, overexposed, underexposed, low contrast, washed out colors, "
+    "excessive noise, grainy texture, poor lighting, flickering, motion blur, distorted "
+    "proportions, unnatural skin tones, deformed facial features, asymmetrical face, "
+    "missing facial features, extra limbs, disfigured hands, wrong hand count, artifacts "
+    "around text, inconsistent perspective, camera shake, incorrect depth of field"
+)
+
+
+class LTXProVideoPipeline:
+    pipeline_kind: ClassVar[Literal["fast", "pro"]] = "pro"
 
     @staticmethod
     def create(
@@ -22,25 +33,54 @@ class LTXFastVideoPipeline:
         gemma_root: str | None,
         upsampler_path: str,
         device: torch.device,
-    ) -> "LTXFastVideoPipeline":
-        return LTXFastVideoPipeline(
+    ) -> "LTXProVideoPipeline":
+        return LTXProVideoPipeline(
             checkpoint_path=checkpoint_path,
             gemma_root=gemma_root,
             upsampler_path=upsampler_path,
             device=device,
         )
 
-    def __init__(self, checkpoint_path: str, gemma_root: str | None, upsampler_path: str, device: torch.device) -> None:
+    def __init__(
+        self,
+        checkpoint_path: str,
+        gemma_root: str | None,
+        upsampler_path: str,
+        device: torch.device,
+    ) -> None:
+        from ltx_core.components.guiders import MultiModalGuiderParams
         from ltx_core.quantization import QuantizationPolicy
-        from ltx_pipelines.distilled import DistilledPipeline
+        from ltx_pipelines.ti2vid_two_stages import TI2VidTwoStagesPipeline
 
-        self.pipeline = DistilledPipeline(
-            distilled_checkpoint_path=checkpoint_path,
-            gemma_root=cast(str, gemma_root),
+        self.num_inference_steps = _DEFAULT_NUM_INFERENCE_STEPS
+        self.negative_prompt = _DEFAULT_NEGATIVE_PROMPT
+
+        self.pipeline = TI2VidTwoStagesPipeline(
+            checkpoint_path=checkpoint_path,
+            distilled_lora=[],
             spatial_upsampler_path=upsampler_path,
+            gemma_root=cast(str, gemma_root),
             loras=[],
             device=device,
             quantization=QuantizationPolicy.fp8_cast() if device_supports_fp8(device) else None,
+        )
+
+        self._device = device
+        self._video_guider_params = MultiModalGuiderParams(
+            cfg_scale=3.0,
+            stg_scale=1.0,
+            rescale_scale=0.7,
+            modality_scale=3.0,
+            skip_step=0,
+            stg_blocks=[28],
+        )
+        self._audio_guider_params = MultiModalGuiderParams(
+            cfg_scale=7.0,
+            stg_scale=1.0,
+            rescale_scale=0.7,
+            modality_scale=3.0,
+            skip_step=0,
+            stg_blocks=[28],
         )
 
     def _run_inference(
@@ -58,11 +98,15 @@ class LTXFastVideoPipeline:
 
         return self.pipeline(
             prompt=prompt,
+            negative_prompt=self.negative_prompt,
             seed=seed,
             height=height,
             width=width,
             num_frames=num_frames,
             frame_rate=frame_rate,
+            num_inference_steps=self.num_inference_steps,
+            video_guider_params=self._video_guider_params,
+            audio_guider_params=self._audio_guider_params,
             images=[_LtxImageInput(img.path, img.frame_idx, img.strength) for img in images],
             tiling_config=tiling_config,
         )
@@ -116,10 +160,10 @@ class LTXFastVideoPipeline:
                 os.unlink(output_path)
 
     def compile_transformer(self) -> None:
-        transformer = self.pipeline.model_ledger.transformer()
+        transformer = self.pipeline.stage_1_model_ledger.transformer()
 
         compiled = cast(
             torch.nn.Module,
             torch.compile(transformer, mode="reduce-overhead", fullgraph=False),  # type: ignore[reportUnknownMemberType]
         )
-        setattr(self.pipeline.model_ledger, "transformer", lambda: compiled)
+        setattr(self.pipeline.stage_1_model_ledger, "transformer", lambda: compiled)
