@@ -59,7 +59,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 [--platform mac|win] [--skip-python] [--clean] [--unpack] [--publish always|never|onTag]"
+      echo "Usage: $0 [--platform mac|linux|win] [--skip-python] [--clean] [--unpack] [--publish always|never|onTag]"
       exit 1
       ;;
   esac

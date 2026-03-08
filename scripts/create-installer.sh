@@ -36,7 +36,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 [--platform mac|win] [--publish always|never|onTag] [--unpack]"
+      echo "Usage: $0 [--platform mac|linux|win] [--publish always|never|onTag] [--unpack]"
       exit 1
       ;;
   esac
@@ -113,6 +113,11 @@ if [ "$UNPACK" = true ]; then
       echo ""
       echo "Unpacked app ready!"
       echo "Run: $RELEASE_DIR/win-unpacked/LTX Desktop.exe"
+      ;;
+    linux)
+      echo ""
+      echo "Unpacked app ready!"
+      echo "Run: $RELEASE_DIR/linux-unpacked/ltx-desktop"
       ;;
   esac
 else

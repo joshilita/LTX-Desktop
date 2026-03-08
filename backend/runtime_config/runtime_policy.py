@@ -8,7 +8,7 @@ def decide_force_api_generations(system: str, cuda_available: bool, vram_gb: int
     if system == "Darwin":
         return True
 
-    if system == "Windows":
+    if system in ("Windows", "Linux"):
         if not cuda_available:
             return True
         if vram_gb is None:

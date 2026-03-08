@@ -72,7 +72,7 @@ export function getPythonDir(): string {
     }
     return path.join(app.getPath('userData'), 'python')
   }
-  // macOS: bundled in resources
+  // macOS / Linux: bundled in resources
   return path.join(process.resourcesPath, 'python')
 }
 

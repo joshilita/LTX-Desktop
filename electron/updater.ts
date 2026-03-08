@@ -14,14 +14,14 @@ export function initAutoUpdater(
   }
 
   // On Windows, don't auto-install — we need to pre-download python-embed first.
-  // On macOS, python is bundled in the DMG so auto-install is fine.
+  // On macOS and Linux, python is bundled in the app so auto-install is fine.
   if (process.platform === 'win32') {
     autoUpdater.autoInstallOnAppQuit = false
   }
 
   autoUpdater.on('update-downloaded', async (info: UpdateDownloadedEvent) => {
     if (process.platform !== 'win32') {
-      // macOS: python is bundled, just install normally
+      // macOS / Linux: python is bundled, just install normally
       autoUpdater.quitAndInstall(false, true)
       return
     }

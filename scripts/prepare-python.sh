@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # prepare-python.sh
-# Downloads a standalone Python and installs all dependencies for macOS distribution.
+# Downloads a standalone Python and installs all dependencies for macOS/Linux distribution.
 #
 # Dependencies are read from uv.lock (via `uv export`) — pyproject.toml is the
 # single source of truth. No hardcoded dependency lists.
 #
 # Uses python-build-standalone (https://github.com/astral-sh/python-build-standalone)
-# which provides relocatable Python builds for macOS.
+# which provides relocatable Python builds for macOS and Linux.
 #
 # Prerequisites:
 #   - uv must be installed (https://docs.astral.sh/uv/)
@@ -29,6 +29,14 @@ BACKEND_DIR="$PROJECT_DIR/backend"
 OUTPUT_PATH="$PROJECT_DIR/$OUTPUT_DIR"
 TEMP_DIR="$(mktemp -d)"
 
+# Detect host OS
+HOST_OS="$(uname -s)"
+case "$HOST_OS" in
+  Darwin) PBS_PLATFORM="apple-darwin" ;;
+  Linux)  PBS_PLATFORM="unknown-linux-gnu" ;;
+  *)      echo "ERROR: Unsupported OS: $HOST_OS"; exit 1 ;;
+esac
+
 # Map architecture names for python-build-standalone
 case "$ARCH" in
   arm64|aarch64) PBS_ARCH="aarch64" ;;
@@ -36,11 +44,11 @@ case "$ARCH" in
   *) echo "ERROR: Unsupported architecture: $ARCH"; exit 1 ;;
 esac
 
-PBS_URL="https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_TAG}/cpython-${PYTHON_VERSION}+${PBS_TAG}-${PBS_ARCH}-apple-darwin-install_only_stripped.tar.gz"
+PBS_URL="https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_TAG}/cpython-${PYTHON_VERSION}+${PBS_TAG}-${PBS_ARCH}-${PBS_PLATFORM}-install_only_stripped.tar.gz"
 
 echo "========================================"
 echo "  LTX Video - Python Environment Setup"
-echo "  Platform: macOS ($ARCH)"
+echo "  Platform: ${HOST_OS} ($ARCH)"
 echo "  Python: $PYTHON_VERSION"
 echo "========================================"
 
@@ -150,9 +158,16 @@ echo ""
 echo "Step 6: Installing dependencies from requirements.txt..."
 echo "  (This may take a while — PyTorch + ML libraries are large)"
 
-# No --extra-index-url needed on macOS: standard PyPI torch includes MPS support
-"$PYTHON_EXE" -m pip install -r "$REQUIREMENTS_FILE" \
-    --no-warn-script-location --quiet
+# Linux needs PyTorch CUDA from the PyTorch index; macOS uses standard PyPI (MPS support)
+if [ "$HOST_OS" = "Linux" ]; then
+  "$PYTHON_EXE" -m pip install -r "$REQUIREMENTS_FILE" \
+      --extra-index-url https://download.pytorch.org/whl/cu128 \
+      --no-warn-script-location --quiet
+else
+  # No --extra-index-url needed on macOS: standard PyPI torch includes MPS support
+  "$PYTHON_EXE" -m pip install -r "$REQUIREMENTS_FILE" \
+      --no-warn-script-location --quiet
+fi
 
 echo "  All dependencies installed"
 
@@ -178,18 +193,20 @@ find "$OUTPUT_PATH/lib" -type d -name "test" -exec rm -rf {} + 2>/dev/null || tr
 
 # Remove files only needed for building native extensions, not at runtime.
 # This cuts ~14k files and speeds up macOS codesigning dramatically.
-# NOTE: Windows needs .h files for sageattention/triton — this script is macOS only.
-rm -rf "$OUTPUT_PATH/include" "$OUTPUT_PATH/share" 2>/dev/null || true
-find "$OUTPUT_PATH/lib" -type d -name "include" -exec rm -rf {} + 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.pyi" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.pxd" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.pyx" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.hpp" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.cpp" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.h" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.cuh" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.cu" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.cmake" -delete 2>/dev/null || true
+# NOTE: Windows and Linux need .h files for sageattention/triton — only clean on macOS.
+if [ "$HOST_OS" = "Darwin" ]; then
+  rm -rf "$OUTPUT_PATH/include" "$OUTPUT_PATH/share" 2>/dev/null || true
+  find "$OUTPUT_PATH/lib" -type d -name "include" -exec rm -rf {} + 2>/dev/null || true
+  find "$OUTPUT_PATH" -name "*.pyi" -delete 2>/dev/null || true
+  find "$OUTPUT_PATH" -name "*.pxd" -delete 2>/dev/null || true
+  find "$OUTPUT_PATH" -name "*.pyx" -delete 2>/dev/null || true
+  find "$OUTPUT_PATH" -name "*.hpp" -delete 2>/dev/null || true
+  find "$OUTPUT_PATH" -name "*.cpp" -delete 2>/dev/null || true
+  find "$OUTPUT_PATH" -name "*.h" -delete 2>/dev/null || true
+  find "$OUTPUT_PATH" -name "*.cuh" -delete 2>/dev/null || true
+  find "$OUTPUT_PATH" -name "*.cu" -delete 2>/dev/null || true
+  find "$OUTPUT_PATH" -name "*.cmake" -delete 2>/dev/null || true
+fi
 
 # Remove temp directory and generated requirements file
 rm -rf "$TEMP_DIR"
@@ -209,8 +226,13 @@ print(f'  Python: {sys.version}')
 try:
     import torch
     print(f'  PyTorch: {torch.__version__}')
-    mps = hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
-    print(f'  MPS available: {mps}')
+    import platform
+    if platform.system() == 'Darwin':
+        mps = hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
+        print(f'  MPS available: {mps}')
+    else:
+        cuda = torch.cuda.is_available()
+        print(f'  CUDA available: {cuda}')
 except ImportError as e:
     print(f'  PyTorch import FAILED: {e}')
     sys.exit(1)

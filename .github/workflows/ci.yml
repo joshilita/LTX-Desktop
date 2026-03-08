@@ -59,6 +59,8 @@ jobs:
             runner: macos-latest
           - os: windows
             runner: windows-latest
+          - os: linux
+            runner: ubuntu-latest
     defaults:
       run:
         working-directory: backend
