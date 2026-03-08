@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator
-from typing import Final, cast
+from typing import ClassVar, Literal, cast
 
 import torch
 
@@ -25,7 +25,7 @@ _DEFAULT_NEGATIVE_PROMPT = (
 
 
 class LTXProVideoPipeline:
-    pipeline_kind: Final = "pro"
+    pipeline_kind: ClassVar[Literal["fast", "pro"]] = "pro"
 
     @staticmethod
     def create(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 import os
-from typing import Final, cast
+from typing import ClassVar, Literal, cast
 
 import torch
 
@@ -14,7 +14,7 @@ from services.services_utils import AudioOrNone, TilingConfigType, device_suppor
 
 
 class LTXFastVideoPipeline:
-    pipeline_kind: Final = "fast"
+    pipeline_kind: ClassVar[Literal["fast", "pro"]] = "fast"
 
     @staticmethod
     def create(
