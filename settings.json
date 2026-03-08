@@ -10,6 +10,7 @@
   },
   "pro_model": {
     "steps": 20,
+    "cfg": 3.5,
     "use_upscaler": true
   },
   "prompt_cache_size": 100

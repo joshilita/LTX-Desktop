@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 export interface InferenceSettings {
   steps: number
+  cfg: number
   useUpscaler: boolean
 }
 
@@ -35,7 +36,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   hasGeminiApiKey: false,
   useLocalTextEncoder: false,
   fastModel: { useUpscaler: true },
-  proModel: { steps: 20, useUpscaler: true },
+  proModel: { steps: 20, cfg: 3.5, useUpscaler: true },
   promptCacheSize: 1,
   promptEnhancerEnabledT2V: false,
   promptEnhancerEnabledI2V: false,
