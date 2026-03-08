@@ -18,7 +18,10 @@ function resolveUserDataPath(): string {
       APP_FOLDER_NAME,
     )
   }
-  return path.join(os.homedir(), `.${APP_FOLDER_NAME}`)
+  // Linux: follow XDG Base Directory specification
+  const dataHome = process.env.XDG_DATA_HOME
+    || path.join(os.homedir(), '.local', 'share')
+  return path.join(dataHome, APP_FOLDER_NAME)
 }
 
 app.setPath('userData', resolveUserDataPath())

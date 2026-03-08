@@ -586,7 +586,7 @@ function SingleClipMenu({
               filePath = liveAsset.takes[Math.max(0, Math.min(takeIdx, liveAsset.takes.length - 1))].path
             }
             if (!filePath) return null
-            const label = window.electronAPI?.platform === 'darwin' ? 'Reveal in Finder' : 'Show in Explorer'
+            const label = window.electronAPI?.platform === 'darwin' ? 'Reveal in Finder' : window.electronAPI?.platform === 'linux' ? 'Show in File Manager' : 'Show in Explorer'
             return <MenuItem icon={FolderOpen} label={label} onClick={() => { window.electronAPI?.showItemInFolder(filePath); close() }} />
           })()}
         </>

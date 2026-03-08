@@ -92,6 +92,25 @@ dmg:
       type: link
       path: /Applications
 
+linux:
+  extraResources:
+    - from: python-embed
+      to: python
+      filter:
+        - "**/*"
+        - "!__pycache__/**"
+        - "!*.pyc"
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  icon: resources/icon.png
+  category: Video
+  artifactName: ${productName}-${arch}.${ext}
+
 publish:
   provider: github
   owner: Lightricks

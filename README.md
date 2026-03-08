@@ -32,8 +32,9 @@ LTX Desktop is an open-source desktop app for generating videos with LTX models 
 | --- | --- | --- |
 | Windows + CUDA GPU with **≥32GB VRAM** | Local generation | Downloads model weights locally |
 | Windows (no CUDA, <32GB VRAM, or unknown VRAM) | API-only | **LTX API key required** |
+| Linux + CUDA GPU with **≥32GB VRAM** | Local generation | Downloads model weights locally |
+| Linux (no CUDA, <32GB VRAM, or unknown VRAM) | API-only | **LTX API key required** |
 | macOS (Apple Silicon builds) | API-only | **LTX API key required** |
-| Linux | Not officially supported | No official builds |
 
 In API-only mode, available resolutions/durations may be limited to what the API supports.
 
@@ -52,6 +53,13 @@ In API-only mode, available resolutions/durations may be limited to what the API
 - macOS 13+ (Ventura)
 - Stable internet connection
 
+### Linux (local generation)
+
+- Debian/Ubuntu (x64) or other modern distribution
+- NVIDIA GPU with CUDA support and **≥32GB VRAM** (more is better)
+- 16GB+ RAM (32GB recommended)
+- Plenty of free disk space for model weights and outputs
+
 ## Install
 
 1. Download the latest installer from GitHub Releases: [Releases](../../releases)
@@ -64,6 +72,7 @@ LTX Desktop stores app data (settings, models, logs) in:
 
 - **Windows:** `%LOCALAPPDATA%\LTXDesktop\`
 - **macOS:** `~/Library/Application Support/LTXDesktop/`
+- **Linux:** `$XDG_DATA_HOME/LTXDesktop/` (defaults to `~/.local/share/LTXDesktop/`)
 
 Model weights are downloaded into the `models/` subfolder (this can be large and may take time).
 
@@ -139,6 +148,9 @@ Setup:
 ```bash
 # macOS
 pnpm setup:dev:mac
+
+# Linux (Debian/Ubuntu)
+pnpm setup:dev:linux
 
 # Windows
 pnpm setup:dev:win

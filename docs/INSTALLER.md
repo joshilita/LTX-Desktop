@@ -35,12 +35,18 @@ Before building, ensure you have:
 
 - **Windows**: PowerShell 5.1+ (comes with Windows 10/11)
 - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+- **Linux**: Build essentials (`sudo apt install build-essential`)
 
 ## Quick Build
 
 ### macOS
 ```bash
 pnpm build:mac
+```
+
+### Linux
+```bash
+pnpm build:linux
 ```
 
 ### Windows
@@ -73,6 +79,22 @@ pnpm build:fast:mac
 pnpm prepare:python:mac
 ```
 
+### Linux
+
+```bash
+# Full build
+pnpm build:linux
+
+# Skip Python setup (if already prepared)
+pnpm build:linux:skip-python
+
+# Fast rebuild (unpacked, skip Python + pnpm install)
+pnpm build:fast:linux
+
+# Just prepare Python environment
+pnpm prepare:python:linux
+```
+
 ### Windows
 
 ```powershell
@@ -95,7 +117,7 @@ powershell -File scripts/local-build.ps1 -Clean
 ### Build Script Options
 
 The `local-build.sh` script accepts:
-- `--platform mac|win` — Target platform (auto-detected if omitted)
+- `--platform mac|linux|win` — Target platform (auto-detected if omitted)
 - `--skip-python` — Use existing `python-embed/` directory
 - `--clean` — Remove build artifacts before starting
 - `--unpack` — Build unpacked app only (faster, no installer/DMG)
@@ -112,6 +134,13 @@ release/
 ```
 release/
   └── LTX Desktop-<version>-Setup.exe
+```
+
+### Linux
+```
+release/
+  └── LTX Desktop-<version>-x64.AppImage
+  └── LTX Desktop-<version>-x64.deb
 ```
 
 ## Application Icon
@@ -138,6 +167,7 @@ xattr -dr com.apple.quarantine /Applications/LTX\ Desktop.app
 Expected sizes:
 - **Windows**: ~10GB (PyTorch CUDA ~2.5GB + ML libraries ~5GB + Python ~200MB + Electron ~100MB)
 - **macOS**: ~2-3GB (PyTorch MPS is much smaller than CUDA variant)
+- **Linux**: ~10GB (similar to Windows — PyTorch CUDA + ML libraries)
 
 ### Runtime / first-run issues
 End-user topics like system requirements, first-run setup, and model download behavior are documented in [`README.md`](../README.md).
@@ -175,4 +205,22 @@ pnpm build:frontend
 
 # 4. Build installer
 npx electron-builder --win
+```
+
+### Linux
+```bash
+# 1. Prepare Python environment
+bash scripts/prepare-python.sh
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Build frontend
+pnpm build:frontend
+
+# 4. Build AppImage + deb
+npx electron-builder --linux
+
+# Or build unpacked app (faster, for testing)
+npx electron-builder --linux --dir
 ```
