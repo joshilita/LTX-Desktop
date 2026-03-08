@@ -54,7 +54,9 @@ else
   if [ "$HOST_OS" = "Darwin" ]; then
     echo "⚠  ffmpeg not found — install with: brew install ffmpeg"
   else
-    echo "⚠  ffmpeg not found — install with: sudo apt install ffmpeg"
+    echo "⚠  ffmpeg not found — install with your package manager, e.g.:"
+    echo "     Debian/Ubuntu: sudo apt install ffmpeg"
+    echo "     Fedora: sudo dnf install ffmpeg"
   fi
   echo "   (imageio-ffmpeg bundled binary will be used as fallback)"
 fi
